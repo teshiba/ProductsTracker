@@ -22,7 +22,7 @@ public class RedmineSyncTests
         var actVal = testClass;
 
         // Assert
-        Assert.AreEqual(expManager, actVal.RedmineManager);
+        Assert.AreEqual(expManager, actVal.ManagerRedmine);
         Assert.AreEqual(expTarget, actVal.TargetRedmine);
     }
 

@@ -1,6 +1,11 @@
 ﻿namespace ProductsTracker;
 
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Security;
+using System.Security.AccessControl;
 
 using Redmine.Net.Api;
 using Redmine.Net.Api.Async;
@@ -13,6 +18,7 @@ public class RedmineManager : Redmine.Net.Api.RedmineManager
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="RedmineManager"/> class.
+    /// dummy default.
     /// </summary>
     public RedmineManager()
         : base("localhost")
@@ -35,23 +41,17 @@ public class RedmineManager : Redmine.Net.Api.RedmineManager
     /// <param name="host">The host name.</param>
     /// <param name="login">The login name.</param>
     /// <param name="password">The login password.</param>
-    public RedmineManager(string host, string login, string password)
-        : base(host, login, password)
+    /// <param name="timeout">network timeout.</param>
+    /// <param name="proxy">network proxy.</param>
+    public RedmineManager(string host, string login, string password, TimeSpan timeout, IWebProxy? proxy)
+        : base(host, login, password, timeout: timeout, proxy: proxy)
     {
     }
 
     /// <summary>
-    /// Gets a Redmine object.
+    /// Gets or sets system API.
     /// </summary>
-    /// <typeparam name="T">The type of objects to retrieve.</typeparam>
-    /// <param name="id">The id of the object.</param>
-    /// <param name="parameters">Optional filters and/or optional fetched data.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public virtual async Task<T> GetObjectAsync<T>(string id, NameValueCollection parameters)
-        where T : class, new()
-    {
-        return await RedmineManagerAsync.GetObjectAsync<T>(this, id, parameters);
-    }
+    public ISystemApi SystemApi { get; set; } = new SystemApi();
 
     /// <summary>
     /// Gets Redmine Isuue.
@@ -61,12 +61,40 @@ public class RedmineManager : Redmine.Net.Api.RedmineManager
     public virtual async Task<Issue> GetIssueAsync(int id)
     {
         var parameters = new NameValueCollection {
-            {
-                RedmineKeys.INCLUDE,
-                RedmineKeys.RELATIONS
-            },
+            { RedmineKeys.INCLUDE, RedmineKeys.RELATIONS },
         };
 
         return await RedmineManagerAsync.GetObjectAsync<Issue>(this, id.ToString(), parameters);
+    }
+
+    /// <summary>
+    /// Open Issue in a web browser.
+    /// </summary>
+    /// <param name="issueId"> issue ID.</param>
+    public void OpenIssue(int issueId)
+    {
+        OpenBrowser($"{Host}/issues/{issueId}");
+    }
+
+    /// <summary>
+    /// Open specified URI.
+    /// </summary>
+    /// <param name="requestUri">URI string.</param>
+    /// <returns>browser process.</returns>
+    public virtual Process? OpenBrowser(string requestUri)
+    {
+        Process? ret;
+
+        try {
+            ret = SystemApi.Start(requestUri);
+        } catch (Win32Exception noBrowser) {
+            Debug.Print(noBrowser.Message);
+            throw;
+        } catch (Exception other) {
+            Debug.Print(other.Message);
+            throw;
+        }
+
+        return ret;
     }
 }

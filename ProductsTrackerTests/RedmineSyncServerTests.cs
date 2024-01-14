@@ -1,4 +1,5 @@
 ﻿namespace ProductsTrackerTests;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using ProductsTracker;
@@ -7,19 +8,38 @@ using ProductsTracker;
 [TestCategory("UseActualServer")]
 public class RedmineSyncServerTests
 {
+    private const string ManagerHost = "http://192.168.0.10/redmine/";
+    private const string ManagerHostUser = "testUser";
+    private const string ManagerHostPass = "12345678";
+
+    private const string TargetHost = "http://192.168.0.15";
+    private const string TargetHostUser = "user";
+    private const string TargetHostPass = "12345678";
+
+    private RedmineManager manager = new ();
+    private RedmineManager target = new ();
+
+    [TestInitialize]
+    public void TestInit()
+    {
+        var timeout = TimeSpan.FromSeconds(5);
+        manager = new RedmineManager(ManagerHost, ManagerHostUser, ManagerHostPass, timeout, null);
+        target = new RedmineManager(TargetHost, TargetHostUser, TargetHostPass, timeout, null);
+    }
+
     [TestMethod]
     public void RedmineSyncTest()
     {
         // Arrange
-        var expManager = new RedmineManager("http://192.168.0.10", "testUser", "12345678");
-        var expTarget = new RedmineManager("http://192.168.0.15", "user", "12345678");
+        var expManager = manager;
+        var expTarget = target;
 
         // Act
         var testClass = new RedmineSync(expManager, expTarget);
         var actVal = testClass;
 
         // Assert
-        Assert.AreEqual(expManager, actVal.RedmineManager);
+        Assert.AreEqual(expManager, actVal.ManagerRedmine);
         Assert.AreEqual(expTarget, actVal.TargetRedmine);
     }
 
@@ -32,8 +52,6 @@ public class RedmineSyncServerTests
     public void GetIssueAsyncTest()
     {
         // Arrange
-        var manager = new RedmineManager("http://192.168.0.10/redmine/", "testUser", "12345678");
-        var target = new RedmineManager("http://192.168.0.15", "user", "12345678");
         var expId = 5;
 
         // Act
@@ -48,8 +66,6 @@ public class RedmineSyncServerTests
     public void GetTargetIssueAsyncTest()
     {
         // Arrange
-        var manager = new RedmineManager("http://192.168.0.10/redmine/", "testUser", "12345678");
-        var target = new RedmineManager("http://192.168.0.15", "user", "12345678");
         var manageId = 5;
         var expTargetIssueId = 1;
 

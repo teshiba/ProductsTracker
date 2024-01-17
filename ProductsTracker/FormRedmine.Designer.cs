@@ -63,6 +63,7 @@ partial class FormRedmine
         tabControl1 = new TabControl();
         tabPage1 = new TabPage();
         tabPage2 = new TabPage();
+        columnHeaderStatus = new ColumnHeader();
         groupBox1.SuspendLayout();
         groupBox2.SuspendLayout();
         tabControl1.SuspendLayout();
@@ -74,14 +75,14 @@ partial class FormRedmine
         // 
         listViewTicket.Activation = ItemActivation.OneClick;
         listViewTicket.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        listViewTicket.Columns.AddRange(new ColumnHeader[] { columnHeaderId, columnHeaderSubject, columnHeaderTargetId, columnHeaderDescription });
+        listViewTicket.Columns.AddRange(new ColumnHeader[] { columnHeaderId, columnHeaderStatus, columnHeaderSubject, columnHeaderTargetId, columnHeaderDescription });
         listViewTicket.ContextMenuStrip = contextMenuStripIssueList;
         listViewTicket.FullRowSelect = true;
         listViewTicket.GridLines = true;
         listViewTicket.Location = new Point(8, 53);
         listViewTicket.MultiSelect = false;
         listViewTicket.Name = "listViewTicket";
-        listViewTicket.Size = new Size(1357, 814);
+        listViewTicket.Size = new Size(882, 815);
         listViewTicket.TabIndex = 0;
         listViewTicket.UseCompatibleStateImageBehavior = false;
         listViewTicket.View = View.Details;
@@ -367,7 +368,7 @@ partial class FormRedmine
         tabControl1.Location = new Point(0, 0);
         tabControl1.Name = "tabControl1";
         tabControl1.SelectedIndex = 0;
-        tabControl1.Size = new Size(1381, 903);
+        tabControl1.Size = new Size(906, 904);
         tabControl1.TabIndex = 11;
         // 
         // tabPage1
@@ -378,7 +379,7 @@ partial class FormRedmine
         tabPage1.Location = new Point(4, 24);
         tabPage1.Name = "tabPage1";
         tabPage1.Padding = new Padding(3);
-        tabPage1.Size = new Size(1373, 875);
+        tabPage1.Size = new Size(898, 876);
         tabPage1.TabIndex = 0;
         tabPage1.Text = "Main";
         tabPage1.UseVisualStyleBackColor = true;
@@ -397,11 +398,15 @@ partial class FormRedmine
         tabPage2.Text = "Settings";
         tabPage2.UseVisualStyleBackColor = true;
         // 
+        // columnHeaderStatus
+        // 
+        columnHeaderStatus.Text = "Status";
+        // 
         // FormRedmine
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1381, 903);
+        ClientSize = new Size(906, 904);
         Controls.Add(tabControl1);
         Margin = new Padding(4);
         Name = "FormRedmine";
@@ -457,4 +462,5 @@ partial class FormRedmine
     private TabPage tabPage1;
     private TabPage tabPage2;
     private CheckBox checkBoxTargetUsingProxy;
+    private ColumnHeader columnHeaderStatus;
 }

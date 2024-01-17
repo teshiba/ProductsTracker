@@ -48,18 +48,16 @@ public partial class FormRedmine : Form
         var ret = new List<ListViewItem>();
 
         foreach (var issue in issues) {
-            var listviewItem = new ListViewItem(issue.Id.ToString());
-            listviewItem.SubItems.Add(issue.Subject);
             var customFieldId = CtrlRedmine.RedmineSync.CustomFieldId;
-            foreach (var item in issue.CustomFields) {
-                if (item.Id == customFieldId) {
-                    listviewItem.SubItems.Add(item.Value);
-                    break;
-                }
-            }
+            var customFields = issue.CustomFields.First((x) => x.Id == customFieldId);
+            var listviewItem = new ListViewItem(issue.Id.ToString());
 
+            listviewItem.SubItems.Add(issue.Status.Name);
+            listviewItem.SubItems.Add(issue.Subject);
+            listviewItem.SubItems.Add(customFields.Values[0].Info);
             listviewItem.SubItems.Add(issue.Description);
             listviewItem.Tag = issue;
+
             ret.Add(listviewItem);
         }
 

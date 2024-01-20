@@ -6,7 +6,8 @@ using System.Diagnostics;
 using Redmine.Net.Api.Async;
 using Redmine.Net.Api;
 using Redmine.Net.Api.Types;
-using ProductsTracker.Properties;
+using System.Net;
+using System;
 
 /// <summary>
 /// Sync multiple redmine ticket.
@@ -24,9 +25,9 @@ public class RedmineSync(RedmineManager manager, RedmineManager target)
     public int CustomFieldId { get; set; }
 
     /// <summary>
-    /// Gets or sets project ID.
+    /// Gets project ID.
     /// </summary>
-    public int ProjectId { get; set; } = Settings.Default.ManageProjectId;
+    public int ProjectId { get; init; }
 
     /// <summary>
     /// Gets target RedmineManager.
@@ -37,6 +38,30 @@ public class RedmineSync(RedmineManager manager, RedmineManager target)
     /// Gets redmineManager.
     /// </summary>
     public RedmineManager ManagerRedmine { get; init; } = manager;
+
+    /// <summary>
+    /// Gets issue status list.
+    /// </summary>
+    public List<IssueStatus> IssueStatuses { get; private set; } = [];
+
+    /// <summary>
+    /// Gets issue list.
+    /// </summary>
+    public List<Issue> Issues { get; private set; } = [];
+
+    /// <summary>
+    /// Gets opened issues.
+    /// </summary>
+    public List<Issue> OpenedIssues
+    {
+        get
+        {
+            var openedStatusIdList = IssueStatuses.Where((x) => !x.IsClosed).Select((item) => item.Id);
+            var ret = Issues.Where((issue) => openedStatusIdList.Contains(issue.Status.Id)).ToList();
+
+            return ret;
+        }
+    }
 
     /// <summary>
     /// Get issue of target redimie.
@@ -74,23 +99,55 @@ public class RedmineSync(RedmineManager manager, RedmineManager target)
     /// Get Issues.
     /// </summary>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task<List<Issue>> GetIssuesAsync()
-        => await GetIssuesAsync(ProjectId);
+    public async Task<bool> LoadIssuesAsync()
+    {
+        return await LoadIssuesAsync(ProjectId)
+            && await LoadIssueStatusListAsync();
+    }
+
+    /// <summary>
+    /// Get target issue ID.
+    /// </summary>
+    /// <param name="issue">manage issue ID.</param>
+    /// <returns>Issue ID.</returns>
+    public string GetTargetIssueId(Issue issue)
+        => issue.CustomFields.First((x) => x.Id == CustomFieldId).Values[0].Info;
 
     /// <summary>
     /// Get Issues.
     /// </summary>
     /// <param name="projectId">target project ID.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task<List<Issue>> GetIssuesAsync(int projectId)
+    private async Task<bool> LoadIssuesAsync(int projectId)
     {
+        bool ret = true;
+
         var parameters = new NameValueCollection {
             { RedmineKeys.STATUS_ID, RedmineKeys.ALL },
             { RedmineKeys.PROJECT_ID, projectId.ToString() },
         };
 
-        var issueList = await ManagerRedmine.GetObjectsAsync<Issue>(parameters);
+        try {
+            Issues = await ManagerRedmine.GetObjectsAsync<Issue>(parameters);
+        } catch (WebException) {
+            ret = false;
+        }
 
-        return issueList;
+        return ret;
+    }
+
+    /// <summary>
+    /// Get Issue status list.
+    /// </summary>
+    /// <returns>Issue status list.</returns>
+    private async Task<bool> LoadIssueStatusListAsync()
+    {
+        var parameters = new NameValueCollection {
+            { RedmineKeys.ISSUE_STATUS, RedmineKeys.ALL },
+        };
+
+        IssueStatuses = await ManagerRedmine.GetObjectsAsync<IssueStatus>(parameters);
+
+        return IssueStatuses is not null;
     }
 }

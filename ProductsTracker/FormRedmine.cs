@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 using ProductsTracker.Properties;
 
-using Redmine.Net.Api.Types;
+using Redmine.Net.Api.Exceptions;
 
 /// <summary>
 /// Show Redmine properties form class.
@@ -22,11 +22,7 @@ public partial class FormRedmine : Form
     public FormRedmine()
     {
         InitializeComponent();
-        CtrlRedmine = new ();
-        listViewItemActions.Add(ListViewTicketId_Click);
-        listViewItemActions.Add(ListViewTicketTitle_Click);
-        listViewItemActions.Add(ListViewTicketTrackedId_Click);
-        listViewItemActions.Add(ListViewTicketDescription_Click);
+        InitListviewActions();
     }
 
     /// <summary>
@@ -34,34 +30,12 @@ public partial class FormRedmine : Form
     /// </summary>
     public CtrlRedmine CtrlRedmine { get; private set; } = new ();
 
-    private static void ValidateIntValue(object sender)
+    private void InitListviewActions()
     {
-        var textbox = (TextBox)sender;
-
-        if (!int.TryParse(textbox.Text, out _)) {
-            textbox.Text = "0";
-        }
-    }
-
-    private List<ListViewItem> CreateTicketListView(List<Issue> issues)
-    {
-        var ret = new List<ListViewItem>();
-
-        foreach (var issue in issues) {
-            var customFieldId = CtrlRedmine.RedmineSync.CustomFieldId;
-            var customFields = issue.CustomFields.First((x) => x.Id == customFieldId);
-            var listviewItem = new ListViewItem(issue.Id.ToString());
-
-            listviewItem.SubItems.Add(issue.Status.Name);
-            listviewItem.SubItems.Add(issue.Subject);
-            listviewItem.SubItems.Add(customFields.Values[0].Info);
-            listviewItem.SubItems.Add(issue.Description);
-            listviewItem.Tag = issue;
-
-            ret.Add(listviewItem);
-        }
-
-        return ret;
+        listViewItemActions.Add(ListViewTicketId_Click);
+        listViewItemActions.Add(ListViewTicketTitle_Click);
+        listViewItemActions.Add(ListViewTicketTrackedId_Click);
+        listViewItemActions.Add(ListViewTicketDescription_Click);
     }
 
     private void LoadSettings()
@@ -78,6 +52,8 @@ public partial class FormRedmine : Form
         textBoxTargetProjectId.Text = Settings.Default.TargetProjectId.ToString();
         checkBoxTargetUsingProxy.Checked = Settings.Default.TargetUsingProxy;
 
+        checkBoxHideClosed.Checked = Settings.Default.HideClosedTicket;
+
         textBoxCustomFieldIndexOfTrackingId.Text = Settings.Default.CustomFieldIndexOfTrackingId.ToString();
     }
 
@@ -93,6 +69,8 @@ public partial class FormRedmine : Form
         Settings.Default.TargetHost = textBoxTargetUrl.Text;
         Settings.Default.TargetUsingProxy = checkBoxTargetUsingProxy.Checked;
 
+        Settings.Default.HideClosedTicket = checkBoxHideClosed.Checked;
+
         // It is expected that the string of the textbox has been validated as integer value.
         Settings.Default.ManageProjectId = int.Parse(textBoxManageProjectId.Text);
         Settings.Default.CustomFieldIndexOfTrackingId = int.Parse(textBoxCustomFieldIndexOfTrackingId.Text);
@@ -100,37 +78,48 @@ public partial class FormRedmine : Form
         Settings.Default.Save();
     }
 
-    private void UpdateSettings()
+    private async Task<bool> ReloadDataAsync()
     {
+        var ret = false;
+
         SaveSettings();
-        CtrlRedmine.ReloadManager();
-    }
-
-    private async Task UpdateViewAsync()
-    {
-        if (CtrlRedmine.RedmineSync is null) {
-            return;
-        }
-
-        listViewTicket.BeginUpdate();
-
-        labelError.Text = $"通信状態:Loading...";
-
-        listViewTicket.Items.Clear();
 
         try {
-            var issues = await CtrlRedmine.RedmineSync.GetIssuesAsync();
-            var listViewItems = CreateTicketListView(issues);
-            listViewTicket.Items.AddRange(listViewItems.ToArray());
-            labelError.Text = $"通信状態:Online";
-            labelReadUrl.Text = string.Empty;
+            CtrlRedmine.ReloadManager();
+            labelError.Text = $"通信状態:Loading...";
+
+            ret = await CtrlRedmine.RedmineSync.LoadIssuesAsync();
+            labelError.Text = ret ? $"通信状態:Load Issue" : $"通信状態:Error Load Issue";
+        } catch (RedmineException ex) {
+            labelError.Text = $"通信状態: Invalid redmine parameter err:{ex.Message}";
         } catch (Exception ex) {
             var webEx = ex.InnerException as WebException;
             labelError.Text = $"通信状態: Invalid parameter";
             labelReadUrl.Text = $"{webEx?.Response?.ResponseUri}";
         }
 
-        listViewTicket.EndUpdate();
+        return ret;
+    }
+
+    private void UpdateView()
+    {
+        if (CtrlRedmine.RedmineSync is not null) {
+            listViewTicket.BeginUpdate();
+            listViewTicket.Items.Clear();
+            labelReadUrl.Text = string.Empty;
+
+            var listViewItems = CtrlRedmine.CreateTicketListView(checkBoxHideClosed.Checked);
+            listViewTicket.Items.AddRange(listViewItems);
+
+            listViewTicket.EndUpdate();
+        }
+    }
+
+    private void OnClickListviewItem(ListView listView)
+    {
+        var clientPosition = listView.PointToClient(MousePosition);
+        var cell = listView.GetCell(clientPosition);
+        listViewItemActions[cell.Col](cell.Value);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -138,36 +127,17 @@ public partial class FormRedmine : Form
     ///////////////////////////////////////////////////////////////////////////
 
     private void ListViewTicket_Click(object sender, EventArgs e)
-    {
-        var listView = (System.Windows.Forms.ListView)sender;
-        var mousePos = listView.PointToClient(MousePosition);
-        var info = listView.HitTest(mousePos);
-
-        if (info.Item is ListViewItem item) {
-            var row = item.Index;
-            var col = item.SubItems.IndexOf(info.SubItem);
-            var value = item.SubItems[col].Text;
-            listViewItemActions[col](value);
-        }
-    }
+        => OnClickListviewItem((ListView)sender);
 
     private void ListViewTicketId_Click(string value)
-    {
-        if (int.TryParse(value, out var issueId)) {
-            CtrlRedmine.RedmineSync.ManagerRedmine.OpenIssue(issueId);
-        }
-    }
+        => CtrlRedmine.RedmineSync.ManagerRedmine.OpenIssue(value);
 
     private void ListViewTicketTitle_Click(string value)
     {
     }
 
     private void ListViewTicketTrackedId_Click(string value)
-    {
-        if (int.TryParse(value, out var issueId)) {
-            CtrlRedmine.RedmineSync.TargetRedmine.OpenIssue(issueId);
-        }
-    }
+        => CtrlRedmine.RedmineSync.TargetRedmine.OpenIssue(value);
 
     private void ListViewTicketDescription_Click(string value)
     {
@@ -185,24 +155,31 @@ public partial class FormRedmine : Form
     [SuppressMessage("Usage", "VSTHRD100:Avoid async void methods", Justification = SuppressReason.GuiEvent)]
     private async void ButtonGetTicket_Click(object sender, EventArgs e)
     {
-        UpdateSettings();
-        await UpdateViewAsync();
+        _ = await ReloadDataAsync();
+        UpdateView();
     }
 
-    private void ButtonCopy_Click(object sender, EventArgs e) => Clipboard.SetText(labelReadUrl.Text);
+    private void CheckBoxHideClosed_CheckedChanged(object sender, EventArgs e)
+    {
+        SaveSettings();
+        UpdateView();
+    }
 
-    private void TextBoxManageUrl_TextChanged(object sender, EventArgs e)
-        => textBoxManageUrl.Text = textBoxManageUrl.Text.Trim('/');
-
-    private void TextBoxTargetUrl_TextChanged(object sender, EventArgs e)
-        => textBoxTargetUrl.Text = textBoxTargetUrl.Text.Trim('/');
-
-    private void TextBoxManageProjectId_TextChanged(object sender, EventArgs e)
-        => ValidateIntValue(sender);
-
-    private void TextBoxCustomFieldIndexOfTrackingId_TextChanged(object sender, EventArgs e)
-        => ValidateIntValue(sender);
+    private void ButtonCopy_Click(object sender, EventArgs e)
+        => Clipboard.SetText(labelReadUrl.Text);
 
     private void TextBoxTargetProjectId_TextChanged(object sender, EventArgs e)
-        => ValidateIntValue(sender);
+        => ((TextBox)sender).ValidateIntValue();
+
+    private void TextBoxManageProjectId_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+        => ((TextBox)sender).ValidateIntValue();
+
+    private void TextBoxTargetProjectId_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+        => ((TextBox)sender).ValidateIntValue();
+
+    private void TextBoxManageUrl_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+         => textBoxManageUrl.Text = textBoxManageUrl.Text.Trim('/');
+
+    private void TextBoxTargetUrl_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+        => textBoxTargetUrl.Text = textBoxTargetUrl.Text.Trim('/');
 }

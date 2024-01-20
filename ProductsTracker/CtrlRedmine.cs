@@ -1,68 +1,83 @@
 ﻿namespace ProductsTracker;
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 
 using ProductsTracker.Properties;
-
 using Redmine.Net.Api.Exceptions;
+using Redmine.Net.Api.Types;
 
 /// <summary>
 /// Controler of FormRedmine.
 /// </summary>
-public class CtrlRedmine : IDisposable
+/// <remarks>
+/// Initializes a new instance of the <see cref="CtrlRedmine"/> class.
+/// </remarks>
+/// <param name="manageProjectId">manage project ID.</param>
+public class CtrlRedmine
 {
-    private readonly Settings settings = Settings.Default;
-
     /// <summary>
     /// Gets redmineSync class.
     /// </summary>
     public RedmineSync RedmineSync { get; private set; } = new (new (), new ());
 
+    private static Settings Settings => Settings.Default;
+
     /// <summary>
     /// Reload redmine manager.
     /// </summary>
-    /// <returns>If <see langword="true"/> initialize success.</returns>
-    public bool ReloadManager()
+    /// <param name="settings">setting data.</param>
+    public void ReloadManager()
     {
-        var ret = false;
-
         try {
             var timeout = TimeSpan.FromSeconds(5);
-            var manegerProxy = settings.ManageUsingProxy ? WebRequest.GetSystemWebProxy() : null;
-            var targetProxy = settings.TargetUsingProxy ? WebRequest.GetSystemWebProxy() : null;
+            var manegerProxy = Settings.ManageUsingProxy ? WebRequest.GetSystemWebProxy() : null;
+            var targetProxy = Settings.TargetUsingProxy ? WebRequest.GetSystemWebProxy() : null;
 
-            var manager = new RedmineManager(settings.ManageHost, settings.ManageUser, settings.ManagePassword, timeout, manegerProxy);
-            var target = new RedmineManager(settings.TargetHost, settings.TargetUser, settings.TargetPassword, timeout, targetProxy);
+            var manager = new RedmineManager(
+                Settings.ManageHost, Settings.ManageUser, Settings.ManagePassword, timeout, manegerProxy);
+            var target = new RedmineManager(
+                Settings.TargetHost, Settings.TargetUser, Settings.TargetPassword, timeout, targetProxy);
 
             RedmineSync = new RedmineSync(manager, target) {
-                CustomFieldId = settings.CustomFieldIndexOfTrackingId,
+                CustomFieldId = Settings.CustomFieldIndexOfTrackingId,
+                ProjectId = Settings.ManageProjectId,
             };
-            ret = true;
         } catch (RedmineException ex) {
             Debug.WriteLine($"Initialization Failed. {ex.Message}");
         }
-
-        return ret;
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     /// <summary>
-    /// Clean up any resources being used.
+    /// Create ticket listView.
     /// </summary>
-    /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-    protected virtual void Dispose(bool disposing)
+    /// <param name="isOpenedOnly">if <see langword="true"/>, listing opened issue.</param>
+    /// <returns>ListViewItem array.</returns>
+    public ListViewItem[] CreateTicketListView(bool isOpenedOnly)
     {
-        if (disposing) {
-            SaveSettings();
-        }
-    }
+        var ret = new List<ListViewItem>();
 
-    private static void SaveSettings() => Settings.Default.Save();
+        var issues = isOpenedOnly
+            ? RedmineSync.OpenedIssues
+            : RedmineSync.Issues;
+
+        foreach (var issue in issues) {
+            var listviewItem = new ListViewItem(issue.Id.ToString()) {
+                Tag = issue,
+            };
+            var targetIssueId = RedmineSync.GetTargetIssueId(issue);
+
+            listviewItem.SubItems.AddRange(FormRedmineHelpers.NewSubItems([
+                issue.Status.Name,
+                issue.Subject,
+                targetIssueId,
+                issue.Description,
+            ]));
+
+            ret.Add(listviewItem);
+        }
+
+        return [.. ret];
+    }
 }

@@ -178,5 +178,17 @@ namespace ProductsTracker.Properties {
                 this["ManageUsingProxy"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool HideClosedTicket {
+            get {
+                return ((bool)(this["HideClosedTicket"]));
+            }
+            set {
+                this["HideClosedTicket"] = value;
+            }
+        }
     }
 }

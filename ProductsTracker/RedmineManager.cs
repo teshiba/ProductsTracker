@@ -7,6 +7,8 @@ using System.Net;
 using System.Net.Security;
 using System.Security.AccessControl;
 
+using Newtonsoft.Json.Linq;
+
 using Redmine.Net.Api;
 using Redmine.Net.Api.Async;
 using Redmine.Net.Api.Types;
@@ -70,10 +72,12 @@ public class RedmineManager : Redmine.Net.Api.RedmineManager
     /// <summary>
     /// Open Issue in a web browser.
     /// </summary>
-    /// <param name="issueId"> issue ID.</param>
-    public void OpenIssue(int issueId)
+    /// <param name="issue"> issue ID.</param>
+    public void OpenIssue(string issue)
     {
-        OpenBrowser($"{Host}/issues/{issueId}");
+        if (int.TryParse(issue, out var issueId)) {
+            OpenBrowser($"{Host}/issues/{issueId}");
+        }
     }
 
     /// <summary>

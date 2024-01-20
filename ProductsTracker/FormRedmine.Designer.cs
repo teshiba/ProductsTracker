@@ -30,6 +30,7 @@ partial class FormRedmine
         components = new System.ComponentModel.Container();
         listViewTicket = new ListView();
         columnHeaderId = new ColumnHeader();
+        columnHeaderStatus = new ColumnHeader();
         columnHeaderSubject = new ColumnHeader();
         columnHeaderTargetId = new ColumnHeader();
         columnHeaderDescription = new ColumnHeader();
@@ -62,8 +63,8 @@ partial class FormRedmine
         buttonCopy = new Button();
         tabControl1 = new TabControl();
         tabPage1 = new TabPage();
+        checkBoxHideClosed = new CheckBox();
         tabPage2 = new TabPage();
-        columnHeaderStatus = new ColumnHeader();
         groupBox1.SuspendLayout();
         groupBox2.SuspendLayout();
         tabControl1.SuspendLayout();
@@ -82,7 +83,7 @@ partial class FormRedmine
         listViewTicket.Location = new Point(8, 53);
         listViewTicket.MultiSelect = false;
         listViewTicket.Name = "listViewTicket";
-        listViewTicket.Size = new Size(882, 815);
+        listViewTicket.Size = new Size(1273, 894);
         listViewTicket.TabIndex = 0;
         listViewTicket.UseCompatibleStateImageBehavior = false;
         listViewTicket.View = View.Details;
@@ -92,6 +93,10 @@ partial class FormRedmine
         // 
         columnHeaderId.Text = "ID";
         columnHeaderId.Width = 100;
+        // 
+        // columnHeaderStatus
+        // 
+        columnHeaderStatus.Text = "Status";
         // 
         // columnHeaderSubject
         // 
@@ -119,7 +124,7 @@ partial class FormRedmine
         textBoxManageUrl.Name = "textBoxManageUrl";
         textBoxManageUrl.Size = new Size(430, 23);
         textBoxManageUrl.TabIndex = 2;
-        textBoxManageUrl.TextChanged += TextBoxManageUrl_TextChanged;
+        textBoxManageUrl.Validating += TextBoxManageUrl_Validating;
         // 
         // label1
         // 
@@ -161,7 +166,7 @@ partial class FormRedmine
         groupBox1.Controls.Add(label4);
         groupBox1.Location = new Point(22, 20);
         groupBox1.Name = "groupBox1";
-        groupBox1.Size = new Size(709, 161);
+        groupBox1.Size = new Size(857, 161);
         groupBox1.TabIndex = 5;
         groupBox1.TabStop = false;
         groupBox1.Text = "管理用Redmine";
@@ -182,7 +187,7 @@ partial class FormRedmine
         textBoxCustomFieldIndexOfTrackingId.Name = "textBoxCustomFieldIndexOfTrackingId";
         textBoxCustomFieldIndexOfTrackingId.Size = new Size(61, 23);
         textBoxCustomFieldIndexOfTrackingId.TabIndex = 6;
-        textBoxCustomFieldIndexOfTrackingId.TextChanged += TextBoxCustomFieldIndexOfTrackingId_TextChanged;
+        textBoxCustomFieldIndexOfTrackingId.Text = "0";
         // 
         // labelCustomFieldIndexOfTrackingId
         // 
@@ -199,7 +204,8 @@ partial class FormRedmine
         textBoxManageProjectId.Name = "textBoxManageProjectId";
         textBoxManageProjectId.Size = new Size(98, 23);
         textBoxManageProjectId.TabIndex = 4;
-        textBoxManageProjectId.TextChanged += TextBoxManageProjectId_TextChanged;
+        textBoxManageProjectId.Text = "0";
+        textBoxManageProjectId.Validating += TextBoxManageProjectId_Validating;
         // 
         // label7
         // 
@@ -240,7 +246,7 @@ partial class FormRedmine
         groupBox2.Controls.Add(label6);
         groupBox2.Location = new Point(22, 200);
         groupBox2.Name = "groupBox2";
-        groupBox2.Size = new Size(709, 197);
+        groupBox2.Size = new Size(857, 64);
         groupBox2.TabIndex = 6;
         groupBox2.TabStop = false;
         groupBox2.Text = "追跡先Redmine";
@@ -261,7 +267,9 @@ partial class FormRedmine
         textBoxTargetProjectId.Name = "textBoxTargetProjectId";
         textBoxTargetProjectId.Size = new Size(98, 23);
         textBoxTargetProjectId.TabIndex = 6;
+        textBoxTargetProjectId.Text = "0";
         textBoxTargetProjectId.TextChanged += TextBoxTargetProjectId_TextChanged;
+        textBoxTargetProjectId.Validating += TextBoxTargetProjectId_Validating;
         // 
         // label8
         // 
@@ -278,7 +286,7 @@ partial class FormRedmine
         textBoxTargetUrl.Name = "textBoxTargetUrl";
         textBoxTargetUrl.Size = new Size(424, 23);
         textBoxTargetUrl.TabIndex = 2;
-        textBoxTargetUrl.TextChanged += TextBoxTargetUrl_TextChanged;
+        textBoxTargetUrl.Validating += TextBoxTargetUrl_Validating;
         // 
         // textBoxTargetUser
         // 
@@ -335,7 +343,7 @@ partial class FormRedmine
         // labelError
         // 
         labelError.AutoSize = true;
-        labelError.Location = new Point(163, 19);
+        labelError.Location = new Point(280, 27);
         labelError.Name = "labelError";
         labelError.Size = new Size(87, 15);
         labelError.TabIndex = 8;
@@ -344,7 +352,7 @@ partial class FormRedmine
         // labelReadUrl
         // 
         labelReadUrl.AutoSize = true;
-        labelReadUrl.Location = new Point(86, 376);
+        labelReadUrl.Location = new Point(813, 231);
         labelReadUrl.Name = "labelReadUrl";
         labelReadUrl.Size = new Size(42, 15);
         labelReadUrl.TabIndex = 9;
@@ -352,7 +360,7 @@ partial class FormRedmine
         // 
         // buttonCopy
         // 
-        buttonCopy.Location = new Point(22, 370);
+        buttonCopy.Location = new Point(749, 225);
         buttonCopy.Name = "buttonCopy";
         buttonCopy.Size = new Size(54, 27);
         buttonCopy.TabIndex = 10;
@@ -368,21 +376,33 @@ partial class FormRedmine
         tabControl1.Location = new Point(0, 0);
         tabControl1.Name = "tabControl1";
         tabControl1.SelectedIndex = 0;
-        tabControl1.Size = new Size(906, 904);
+        tabControl1.Size = new Size(1297, 983);
         tabControl1.TabIndex = 11;
         // 
         // tabPage1
         // 
+        tabPage1.Controls.Add(checkBoxHideClosed);
         tabPage1.Controls.Add(listViewTicket);
         tabPage1.Controls.Add(buttonGetTicket);
         tabPage1.Controls.Add(labelError);
         tabPage1.Location = new Point(4, 24);
         tabPage1.Name = "tabPage1";
         tabPage1.Padding = new Padding(3);
-        tabPage1.Size = new Size(898, 876);
+        tabPage1.Size = new Size(1289, 955);
         tabPage1.TabIndex = 0;
         tabPage1.Text = "Main";
         tabPage1.UseVisualStyleBackColor = true;
+        // 
+        // checkBoxHideClosed
+        // 
+        checkBoxHideClosed.AutoSize = true;
+        checkBoxHideClosed.Location = new Point(169, 28);
+        checkBoxHideClosed.Name = "checkBoxHideClosed";
+        checkBoxHideClosed.Size = new Size(95, 19);
+        checkBoxHideClosed.TabIndex = 10;
+        checkBoxHideClosed.Text = "完了を非表示";
+        checkBoxHideClosed.UseVisualStyleBackColor = true;
+        checkBoxHideClosed.CheckedChanged += CheckBoxHideClosed_CheckedChanged;
         // 
         // tabPage2
         // 
@@ -393,20 +413,16 @@ partial class FormRedmine
         tabPage2.Location = new Point(4, 24);
         tabPage2.Name = "tabPage2";
         tabPage2.Padding = new Padding(3);
-        tabPage2.Size = new Size(1373, 875);
+        tabPage2.Size = new Size(1289, 955);
         tabPage2.TabIndex = 1;
         tabPage2.Text = "Settings";
         tabPage2.UseVisualStyleBackColor = true;
-        // 
-        // columnHeaderStatus
-        // 
-        columnHeaderStatus.Text = "Status";
         // 
         // FormRedmine
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(906, 904);
+        ClientSize = new Size(1297, 983);
         Controls.Add(tabControl1);
         Margin = new Padding(4);
         Name = "FormRedmine";
@@ -463,4 +479,5 @@ partial class FormRedmine
     private TabPage tabPage2;
     private CheckBox checkBoxTargetUsingProxy;
     private ColumnHeader columnHeaderStatus;
+    private CheckBox checkBoxHideClosed;
 }
